@@ -79,33 +79,13 @@ local function project_files(opts)
   if not ok then require'telescope.builtin'.find_files(opts) end
 end
 
-M.list = function(opts)
-  opts = opts or {}
-  opts.bin = opts.bin and vim.fn.expand(opts.bin) or 'fd'
-  opts.cwd = vim.env.HOME
+local function call_picker(opts, command)
   opts.entry_maker = utils.get_lazy_default(opts.entry_maker, gen_from_ghq, opts)
-
-  local bin = vim.fn.expand(opts.bin)
-  local fd_command = {bin}
-  local repo_pattern = opts.pattern or [[^\.git$]]
-
-  -- Don’t filter only on directories with fd as git worktrees actually have a
-  -- .git file in them.
-  local find_repo_opts = {'--hidden', '--case-sensitive', '--absolute-path'}
-  local find_user_opts = opts.fd_opts or {}
-  local find_exec_opts = {'--exec', 'echo', [[{//}]], ';'}
-  local find_pattern_opts = {repo_pattern}
-
-  table.insert(fd_command, find_repo_opts)
-  table.insert(fd_command, find_user_opts)
-  table.insert(fd_command, find_exec_opts)
-  table.insert(fd_command, find_pattern_opts)
-  fd_command = vim.tbl_flatten(fd_command)
 
   pickers.new(opts, {
     prompt_title = 'Git repositories',
     finder = finders.new_oneshot_job(
-      fd_command,
+      command,
       opts
     ),
     previewer = previewers.new_termopen_previewer{
@@ -143,6 +123,32 @@ M.list = function(opts)
       return true
     end,
   }):find()
+end
+
+-- Always up to date list of repos built using fd
+M.list = function(opts)
+  opts = opts or {}
+  opts.bin = opts.bin and vim.fn.expand(opts.bin) or 'fd'
+  opts.cwd = vim.env.HOME
+
+  local bin = vim.fn.expand(opts.bin)
+  local fd_command = {bin}
+  local repo_pattern = opts.pattern or [[^\.git$]]
+
+  -- Don’t filter only on directories with fd as git worktrees actually have a
+  -- .git file in them.
+  local find_repo_opts = {'--hidden', '--case-sensitive', '--absolute-path'}
+  local find_user_opts = opts.fd_opts or {}
+  local find_exec_opts = {'--exec', 'echo', [[{//}]], ';'}
+  local find_pattern_opts = {repo_pattern}
+
+  table.insert(fd_command, find_repo_opts)
+  table.insert(fd_command, find_user_opts)
+  table.insert(fd_command, find_exec_opts)
+  table.insert(fd_command, find_pattern_opts)
+  fd_command = vim.tbl_flatten(fd_command)
+
+  call_picker(opts, fd_command)
 end
 
 return M
