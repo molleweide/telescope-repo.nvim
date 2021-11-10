@@ -5,6 +5,7 @@ local conf = require'telescope.config'.values
 local entry_display = require'telescope.pickers.entry_display'
 local finders = require'telescope.finders'
 local from_entry = require'telescope.from_entry'
+local log = require "telescope.log"
 local pickers = require'telescope.pickers'
 local previewers = require'telescope.previewers'
 local utils = require'telescope.utils'
@@ -79,9 +80,11 @@ end
 -- - we get entries like “/home/me/repo/.git”
 -- - we want to send entries like “/home/me/repo”
 local function gen_from_locate_wrapper(opts)
+  log.info "Called gen_from_locate_wrapper"
   -- TODO Make this a wrapper over any function, not just gen_from_fd
   -- TODO It’s not great for performance to parse paths in the whole list like this
   return function(line_with_dotgit)
+    log.info("line_with_dotgit " .. line_with_dotgit)
     local line = Path:new(line_with_dotgit):parent().filename
     return gen_from_fd(opts)(line)
   end
@@ -160,6 +163,8 @@ M.cached_list = function(opts)
 
   local repo_pattern = opts.pattern or [[/\.git$]] -- We match on the whole path
   local locate_command = {bin, '-r', repo_pattern}
+  log.info("locate_command: "..vim.inspect(locate_command))
+
   call_picker(opts, locate_command, ' (cached)')
 end
 
