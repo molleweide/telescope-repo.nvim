@@ -153,8 +153,8 @@ M.cached_list = function(opts)
   if opts.bin == nil then
     if vim.fn.executable'plocate' == 1 then
       opts.bin = 'plocate'
-    elseif vim.fn.executable'locate' == 1 then -- Fallback
-      opts.bin = 'locate'
+    elseif vim.fn.executable'glocate' == 1 then -- Fallback
+      opts.bin = 'glocate'
     else
       error "Please install locate (or one of its alternatives)"
     end
@@ -162,7 +162,9 @@ M.cached_list = function(opts)
   local bin = vim.fn.expand(opts.bin)
 
   local repo_pattern = opts.pattern or [[/\.git$]] -- We match on the whole path
-  local locate_command = {bin, '-r', repo_pattern}
+    local custom_db = opts.custom_db or [[$HOME/locatedb]]
+  -- local locate_command = {bin, '-r', repo_pattern}
+    local locate_command = {bin, '-d', custom_db, '-r', repo_pattern}
   log.info("locate_command: "..vim.inspect(locate_command))
 
   call_picker(opts, locate_command, ' (cached)')
