@@ -1,10 +1,17 @@
-local repo_builtin = require'telescope._extensions.repo_builtin'
+local main = require'telescope._extensions.repo.main'
+local health = require'telescope._extensions.repo.health'
 
 print("local telescope repo")
 
 return require'telescope'.register_extension{
+  health = health.check,
   exports = {
-    list = repo_builtin.list,
-    cached_list = repo_builtin.cached_list,
+    list = main.list,
+    cached_list = main.cached_list,
+    -- Default command, for now, may change
+    repo = function (opts)
+      vim.api.nvim_echo({{"Falling back to `:Telescope repo list`, but this behavior may change in the future"}}, true, {})
+      main.list(opts)
+    end,
   },
 }

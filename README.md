@@ -21,7 +21,7 @@ end_insert -->
 # 🦘 telescope-repo.nvim: jump around the repositories in your filesystem, without any setup
 <!-- end_remove -->
 
-![Neovim version](https://img.shields.io/badge/Neovim-0.5-57A143?style=flat&logo=neovim) [![](https://img.shields.io/badge/powered%20by-riss-lightgrey)](https://cj.rs/riss)
+![Neovim version](https://img.shields.io/badge/Neovim-0.5-57A143?style=flat&logo=neovim) [![](https://img.shields.io/badge/powered%20by-riss-lightgrey)](https://cj.rs/riss) ![GitHub tag (latest SemVer)](https://img.shields.io/github/v/tag/cljoly/telescope-repo.nvim?color=darkgreen&sort=semver)
 
 <!-- insert
 {{< rawhtml >}}
@@ -54,7 +54,7 @@ Use cases include:
 
 ## Installation
 
-You need to add these in your plugin management system:
+You need to add these in your plugin management system[^2]:
 ```lua
 'nvim-lua/plenary.nvim'
 'nvim-telescope/telescope.nvim'
@@ -63,6 +63,11 @@ You need to add these in your plugin management system:
 And optionally, to load the extension:
 ```lua
 require'telescope'.load_extension'repo'
+```
+
+A handy companion plugin is [vim-rooter](https://github.com/airblade/vim-rooter), as it’ll change the current directory according to the current file’s detected project (often, the root of the git repository). To get it to change each *buffer’s* directory, instead of the whole editor by default, add the following Lua to your configuration:
+```lua
+g['rooter_cd_cmd'] = 'lcd'
 ```
 
 ### Packer
@@ -105,6 +110,8 @@ Running `repo list` and list repositories' paths.
 | key              | action               |
 |------------------|----------------------|
 | `<CR>` (edit)    | `builtin.git_files` for git, falls back to `builtin.find_files` for other SCMs |
+| `<C-v>` (vertical)    | `builtin.live_grep` in the selected project |
+| `<C-t>` (tab) | Same as `<CR>` but opens a new tab. Also, does a `cd` into the project’s directory for this tab only |
 
 #### Options
 
@@ -202,10 +209,19 @@ Options are the similar to `repo list`, bearing in mind that we use `locate` ins
 
 ##### Exclude Irrelevant Results
 
-Chances are you will get results from folders you don’t care about like `.cache` or `.cargo`. In that case, you can use the `file_ignore_patterns` option of Telescope, like so (these are lua regexes):
+Chances are you will get results from folders you don’t care about like `.cache` or `.cargo`. In that case, you can use the `file_ignore_patterns` option of Telescope, like so (these are [Lua regexes](https://www.lua.org/manual/5.1/manual.html#5.4.1)).
 
+Hide all git repositories that may be in `.cache` or `.cargo`:
+```lua
+:lua require'telescope'.extensions.repo.cached_list{file_ignore_patterns={"/%.cache/", "/%.cargo/"}}
 ```
-:lua require'telescope'.extensions.repo.cached_list{file_ignore_patterns={'.cache/', '.cargo/'}}
+###### Notes
+
+* These patterns are used to filter the output of the `locate` command, so they don’t speed up the search in any way. You should use them mainly to exclude git repositories you won’t want to jump into, not in the hope to enhance performance.
+* The `%.` in Lua regex is an escaped `.` as `.` matches any characters.
+* These patterns are applied against whole paths like `/home/myuser/.cache/some/dir`, so if you want to exclude only `/home/myuser/.cache`, you need a more complicated pattern like so:
+```lua
+:lua require'telescope'.extensions.repo.cached_list{file_ignore_patterns={"^".. vim.env.HOME .. "/%.cache/", "^".. vim.env.HOME .. "/%.cargo/"}}
 ```
 
 ##### Use With Other SCMs
@@ -221,7 +237,63 @@ Here is how you can use this plugin with various SCM (we match on the whole path
 
 ## FAQ
 
+### No repositories are found
+
+Make sure that `:checkhealth telescope` shows something like:
+```markdown
+## Telescope Extension: `repo`
+  - OK: Will use `glow` to preview markdown READMEs
+  - OK: Will use `bat` to preview non-markdown READMEs
+  - OK: locate: found `plocate`
+    plocate 1.1.13
+    Copyright 2020 Steinar H. Gunderson
+    License GPLv2+: GNU GPL version 2 or later <https://gnu.org/licenses/gpl.html>.
+    This is free software: you are free to change and redistribute it.
+    There is NO WARRANTY, to the extent permitted by law.
+  - INFO: Repos found for `:Telescope repo cached_list`:
+    /home/cj/.cache/yay/android-sdk/.git, /home/cj/.cache/yay/android-sdk-platform-tools/.git...
+  - OK: fd: found `fd`
+    fd 8.3.0
+  - INFO: Repos found for `:Telescope repo list`:
+    /home/cj/tmp/git_rst, /home/cj/qmk_firmware...
+```
+**This may take a few seconds to run**
+
+The output of this command may point to missing dependencies.
+
 ### Getting the repository list is slow
 
+<<<<<<< HEAD
 If `:Telescope repo list` is slow, you can use your `.fdignore` to exclude some folders from your filesystem. If there is enough interest, [#1](https://github.com/cljoly/telescope-repo.nvim/issues/1) could further enhance this.
+=======
+If `:Telescope repo list` is slow, you can use your `.fdignore` to exclude some folders from your filesystem. You can even use a custom ignore file with the `--ignore-file` option, like so:
+```
+lua require'telescope'.extensions.repo.list{fd_opts=[[--ignore-file=myignorefile]]}
+```
+>>>>>>> upstream/master
 
+## Contribute
+
+Contributions are welcome, see this [document](https://cj.rs/docs/contribute/)!
+
+The telescope [developers documentation](https://github.com/nvim-telescope/telescope.nvim/blob/master/developers.md) is very useful to understand how plugins work and you may find [these tips](https://cj.rs/blog/tips/nvim-plugin-development/) useful.
+
+## Stability
+
+We understand that you need a reliable plugin that never breaks. To this end, code changes are first tested on our machines in a separate `dev` branch and once we are reasonably confident that changes don’t have unintended side-effects, they get merged to the `master` branch, where a wider user-base will get the changes. We also often tag releases, holding a more mature, coherent set of changes. If you are especially sensitive to changes, instruct your package manager to install the version pointed by a particular tag and watch for new releases [on GitHub](https://github.blog/changelog/2018-11-27-watch-releases/) or [via RSS](https://ronaldsvilcins.com/2020/03/26/rss-feeds-for-your-github-releases-tags-and-activity/). Conversely, if you wish to live on the bleeding-edge, instruct your package manager to use the `dev` branch.
+
+[^2]: See also [Stability](#stability)
+
+## Changelog
+
+### 0.2.0
+
+* Add support for `checkhealth`
+* Add picker that builds the list of repositories from `locate`, thus taking profit of a system-wide index.
+* Add mappings leading to various actions
+* Preview non-markdown Readme file
+
+### 0.1.0
+
+* Basic feature, generate a dynamic project list with `fd`
+* Falls back to file listing if we are not in a `git` repository
